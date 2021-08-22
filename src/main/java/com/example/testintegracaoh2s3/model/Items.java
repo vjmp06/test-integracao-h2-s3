@@ -1,6 +1,5 @@
 package com.example.testintegracaoh2s3.model;
 
-import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
@@ -17,11 +16,8 @@ public class Items {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
 
-    @Column
-    private String descricao;
-    
     @ManyToOne
-    @JoinColumn(name="cart_id")
+    @JoinColumn(name="cart_id", referencedColumnName = "cart_id")
     private Cart cart;
 
     public Integer getId() {

@@ -4,12 +4,10 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.stream.Collectors;
 
-import com.amazonaws.auth.AWSStaticCredentialsProvider;
-import com.amazonaws.auth.AnonymousAWSCredentials;
-import com.amazonaws.client.builder.AwsClientBuilder;
 import com.amazonaws.services.s3.AmazonS3;
-import com.amazonaws.services.s3.AmazonS3ClientBuilder;
+import com.example.testintegracaoh2s3.config.AmazonS3Configuration;
 import com.example.testintegracaoh2s3.model.Cart;
 import com.example.testintegracaoh2s3.model.Items;
 import com.example.testintegracaoh2s3.model.Student;
@@ -18,15 +16,16 @@ import com.example.testintegracaoh2s3.repository.ItemsRepository;
 import com.example.testintegracaoh2s3.repository.StudentRepository;
 import com.google.gson.Gson;
 
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.util.SocketUtils;
+import org.springframework.context.annotation.Import;
 import org.springframework.web.client.RestTemplate;
 
-import io.findify.s3mock.S3Mock;
-
 @SpringBootTest
+@Import(AmazonS3Configuration.class)
 public class InMemoryDBTest {
 
   @Autowired
@@ -38,36 +37,24 @@ public class InMemoryDBTest {
   @Autowired
   private ItemsRepository itemsRepository;
 
+  @Autowired
+  private AmazonS3 amazonS3;
+
   @Test
   public void saveUpdateByQuery() {
-    Items item1 = new Items();
-    Items item2 = new Items();
+    cartRepository.save(new Cart(LocalDateTime.now()));
+    itemsRepository.saveAll(List.of(new Items(), new Items()));
+    List<Items> items = itemsRepository.findAll();
 
-    Cart cart1 = new Cart();
-    cart1.setDataExecucao(LocalDateTime.now());
-    cart1 = cartRepository.save(cart1);
+    List<String> idsItems = items.stream().map(Items::getId).map(id -> id.toString()).collect(Collectors.toList());
 
-    itemsRepository.saveAll(List.of(item1, item2));
+    itemsRepository.updateDataExecucao(1, idsItems);
 
-    itemsRepository.findAll();
-    itemsRepository.updateDataExecucao(cart1.getId());
-
-    Gson g = new Gson();
-    System.out.println(g.toJson(itemsRepository.findAll()));
+    assertEquals(itemsRepository.itemsWithoutCartId().size(), 0);
   }
 
   @Test
   public void s3Client() {
-
-    int port = SocketUtils.findAvailableTcpPort();
-    S3Mock api = new S3Mock.Builder().withPort(port).withInMemoryBackend().build();
-    api.start(); // Start the Mock S3 server locally on available port
-
-    AmazonS3 amazonS3 = AmazonS3ClientBuilder.standard().withPathStyleAccessEnabled(true)
-        .withCredentials(new AWSStaticCredentialsProvider(new AnonymousAWSCredentials())) // use anonymous credentials.
-        .withEndpointConfiguration(new AwsClientBuilder.EndpointConfiguration("http://localhost:" + port, "us-west-2"))
-        .build();
-
     amazonS3.createBucket("your-bucket");
 
     Gson g = new Gson();

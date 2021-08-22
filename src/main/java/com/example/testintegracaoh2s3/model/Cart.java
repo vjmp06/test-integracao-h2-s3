@@ -1,6 +1,7 @@
 package com.example.testintegracaoh2s3.model;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Set;
 
 import javax.persistence.Column;
@@ -17,6 +18,7 @@ public class Cart {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "cart_id")
     private Integer id;
 
     @Column
@@ -24,6 +26,18 @@ public class Cart {
     
     @OneToMany(mappedBy="cart")
     private Set<Items> items;
+
+    public Cart() {       
+    }
+
+    public Cart(LocalDateTime dataExecucao) {
+        this.dataExecucao = dataExecucao;
+    }
+
+    public Cart(LocalDateTime dataExecucao, Set<Items> items) {
+        this.dataExecucao = dataExecucao;
+        this.items = items;
+    }
 
     public Integer getId() {
         return id;
